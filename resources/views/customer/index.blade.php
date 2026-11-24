@@ -288,7 +288,7 @@
     </main>
 
     <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-600 mt-16">
-        <p class="font-semibold">&copy; {{ date('Y') }} LaundrySimple. Ujian Sertifikasi Kompetensi (Serkom) Rekayasa Perangkat Lunak.</p>
+        <p class="font-semibold">&copy; {{ date('Y') }} LaundrySimple. Sistem Manajemen & Rekap Transaksi Laundry Modern.</p>
     </footer>
 
     <script>

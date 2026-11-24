@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Laundry Rey — Sistem Operasional & Rekap Transaksi Laundry</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spinSlow 3s linear infinite;
+        }
+        [x-cloak] { display: none !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #printableReceipt, #printableReceipt * { visibility: visible; }
+            #printableReceipt { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white"
+      x-data="laundryApp()" x-init="initApp()" x-cloak>
+
+    <!-- ================= NAVBAR ATAS (Tanpa Hamburger Menu) ================= -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                
+                <!-- Logo Mesin Cuci Berputar + Brand Name -->
+                <div class="flex items-center gap-6 sm:gap-8">
+                    <button type="button" @click="activeTab = 'rekap'" class="flex items-center gap-2.5 sm:gap-3 group focus:outline-none shrink-0 text-left">
+                        <!-- Logo Mesin Cuci dengan Animasi Putaran Drum Halus -->
+                        <div class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 shadow-sm flex items-center justify-center p-1.5 shrink-0 group-hover:scale-105 transition-transform duration-200">
+                            <svg class="w-full h-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="3" y="2" width="18" height="20" rx="3.5" stroke="currentColor" stroke-width="1.8" fill="rgba(255,255,255,0.15)" />
+                                <line x1="3" y1="7" x2="21" y2="7" stroke="currentColor" stroke-width="1.4" />
+                                <circle cx="6.5" cy="4.5" r="1" fill="currentColor" />
+                                <circle cx="9.5" cy="4.5" r="1" fill="currentColor" />
+                                <line x1="14" y1="4.5" x2="18.5" y2="4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                                <circle cx="12" cy="14.5" r="5" stroke="currentColor" stroke-width="1.6" />
+                                <!-- Spinning Inner Drum -->
+                                <g class="animate-spin-slow" style="transform-origin: 12px 14.5px;">
+                                    <circle cx="12" cy="14.5" r="3" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 1.5" />
+                                    <path d="M12 11.8C13.3 11.8 14.5 13 14.5 14.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                    <path d="M12 17.2C10.7 17.2 9.5 16 9.5 14.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                </g>
+                            </svg>
+                        </div>
+
+                        <!-- Brand Typography -->
+                        <div class="flex flex-col">
+                            <span class="font-extrabold text-slate-900 tracking-tight text-sm sm:text-base leading-tight">Laundry Rey</span>
+                            <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 tracking-wider uppercase leading-none mt-0.5">Sistem Kasir & Rekap</span>
+                        </div>
+                    </button>
+
+                    <!-- Desktop Navigation Links -->
+                    <div class="hidden md:flex items-center space-x-1">
+                        <!-- Rekap Transaksi -->
+                        <button type="button" 
+                                @click="activeTab = 'rekap'"
+                                :class="activeTab === 'rekap' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition">
+                            <svg class="w-4 h-4" :class="activeTab === 'rekap' ? 'text-blue-600' : 'text-slate-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            <span>Rekap Transaksi</span>
+                        </button>
+
+                        <!-- Data Pelanggan -->
+                        <button type="button" 
+                                @click="activeTab = 'pelanggan'"
+                                :class="activeTab === 'pelanggan' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition">
+                            <svg class="w-4 h-4" :class="activeTab === 'pelanggan' ? 'text-blue-600' : 'text-slate-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>Data Pelanggan</span>
+                        </button>
+
+                        <!-- Katalog Layanan -->
+                        <button type="button" 
+                                @click="activeTab = 'layanan'"
+                                :class="activeTab === 'layanan' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition">
+                            <svg class="w-4 h-4" :class="activeTab === 'layanan' ? 'text-blue-600' : 'text-slate-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            <span>Katalog Layanan</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Profile / Actions (NO Hamburger Menu) -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Date Pill -->
+                    <div class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-medium text-slate-600">
+                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span x-text="todayFormatted"></span>
+                    </div>
+
+                    <!-- Role Badge -->
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200"
+                          x-text="currentUser.role">
+                    </span>
+
+                    <!-- User Account Pill & Modal Trigger -->
+                    <button type="button" 
+                            @click="isAuthModalOpen = true"
+                            class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px] shrink-0"
+                             x-text="currentUser.name.charAt(0)">
+                        </div>
+                        <span class="hidden sm:inline max-w-[110px] truncate" x-text="currentUser.name"></span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Mobile Navigation Tab Bar (Directly accessible under header) -->
+            <div class="flex md:hidden items-center gap-1.5 pb-2.5 overflow-x-auto border-t border-slate-100 pt-2 no-scrollbar">
+                <button type="button" 
+                        @click="activeTab = 'rekap'"
+                        :class="activeTab === 'rekap' ? 'bg-blue-50 text-blue-700 border-blue-200 font-bold' : 'text-slate-600 bg-slate-50 font-medium'"
+                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap border border-transparent transition">
+                    <span>Rekap</span>
+                </button>
+                <button type="button" 
+                        @click="activeTab = 'pelanggan'"
+                        :class="activeTab === 'pelanggan' ? 'bg-blue-50 text-blue-700 border-blue-200 font-bold' : 'text-slate-600 bg-slate-50 font-medium'"
+                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap border border-transparent transition">
+                    <span>Pelanggan</span>
+                </button>
+                <button type="button" 
+                        @click="activeTab = 'layanan'"
+                        :class="activeTab === 'layanan' ? 'bg-blue-50 text-blue-700 border-blue-200 font-bold' : 'text-slate-600 bg-slate-50 font-medium'"
+                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap border border-transparent transition">
+                    <span>Layanan</span>
+                </button>
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- ================= MAIN CONTENT CONTAINER ================= -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= TAB 1: REKAP TRANSAKSI ================= -->
+        <div x-show="activeTab === 'rekap'" class="space-y-6">
+            
+            <!-- Page Header Area -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+                <div class="flex items-center gap-3">
+                    <div class="relative w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/25">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <rect x="3" y="2" width="18" height="20" rx="3" stroke-width="1.8"/>
+                            <circle cx="8" cy="6" r="1" fill="currentColor"/>
+                            <circle cx="11" cy="6" r="1" fill="currentColor"/>
+                            <line x1="15" y1="6" x2="18" y2="6" stroke-width="1.5"/>
+                            <circle cx="12" cy="14" r="5" stroke-width="1.8"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center pt-2 pointer-events-none">
+                            <svg class="w-4 h-4 text-sky-200 animate-spin-slow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="6 5">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Laundry Rey</span>
+                            <span class="text-xs text-slate-300">•</span>
+                            <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Rekap Transaksi Laundry</h1>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Kelola pencatatan order masuk, update status cucian, dan cetak struk pembayaran.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <button type="button" 
+                            @click="openCreateModal()" 
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-lg shadow-sm transition cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Tambah Transaksi Baru</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4 Kartu Metrik Ringkasan Interaktif -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <!-- Total Transaksi -->
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Transaksi</span>
+                    <div class="mt-2.5 flex items-baseline justify-between">
+                        <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums" x-text="orders.length"></span>
+                        <span class="text-xs font-semibold text-slate-400">Order</span>
+                    </div>
+                </div>
+
+                <!-- Pesanan Proses -->
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sedang Diproses</span>
+                    <div class="mt-2.5 flex items-baseline justify-between">
+                        <span class="text-2xl sm:text-3xl font-extrabold text-amber-600 tabular-nums" x-text="countProses"></span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            Pencucian
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Pesanan Selesai -->
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Selesai / Diambil</span>
+                    <div class="mt-2.5 flex items-baseline justify-between">
+                        <span class="text-2xl sm:text-3xl font-extrabold text-emerald-600 tabular-nums" x-text="countSelesai"></span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Siap Ambil
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Total Pendapatan -->
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Omzet Transaksi</span>
+                    <div class="mt-2.5 flex items-baseline justify-between">
+                        <span class="text-lg sm:text-2xl font-extrabold text-blue-600 tabular-nums truncate" x-text="formatRupiah(totalRevenue)"></span>
+                        <span class="text-xs font-semibold text-slate-400 shrink-0">Akumulasi</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bagian 2 Grafik Interaktif: Mingguan + Donut 3 Warna -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                
+                <!-- Grafik 1: Tren Pengerjaan Mingguan -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-900">Aktivitas Cucian 7 Hari Terakhir</h2>
+                            <p class="text-[11px] text-slate-400">Statistik harian pengerjaan order laundry.</p>
+                        </div>
+                        <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/60">
+                            7 Hari Terakhir
+                        </span>
+                    </div>
+
+                    <!-- Bar Chart Visual -->
+                    <div class="pt-6 pb-2">
+                        <div class="h-44 flex items-end justify-between gap-2 sm:gap-4 overflow-x-auto px-1">
+                            <template x-for="(day, idx) in weeklyData" :key="idx">
+                                <div class="flex-1 flex flex-col items-center min-w-[38px] group cursor-pointer">
+                                    <div class="text-[10px] font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity mb-1.5"
+                                         x-text="day.count + ' order'">
+                                    </div>
+                                    <div class="w-full max-w-[42px] bg-slate-100 rounded-lg overflow-hidden flex flex-col justify-end h-28 relative">
+                                        <div class="w-full bg-blue-500 group-hover:bg-blue-600 transition-all duration-300 rounded-t-md"
+                                             :style="'height: ' + Math.max(12, (day.count / 10) * 100) + '%;'">
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-center">
+                                        <span class="block text-[11px] font-bold text-slate-700 group-hover:text-blue-600 transition" x-text="day.day"></span>
+                                        <span class="block text-[9px] text-slate-400 font-medium" x-text="day.date"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grafik 2: Komposisi Donut Ring (3 Warna: Emerald, Amber, Rose) -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div class="pb-3 border-b border-slate-100">
+                        <h2 class="text-sm font-bold text-slate-900">Komposisi Status Pesanan</h2>
+                        <p class="text-[11px] text-slate-400">Interaktif: arahkan kursor untuk melihat rincian.</p>
+                    </div>
+
+                    <div class="py-4 flex flex-col items-center justify-center">
+                        <!-- Donut SVG 3 Warna -->
+                        <div class="relative w-36 h-36 flex items-center justify-center">
+                            <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+                                <!-- Track Background -->
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="#F1F5F9" stroke-width="12" />
+                                
+                                <!-- 1. Selesai (Emerald #10B981) -->
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="#10B981" stroke-width="12"
+                                        :stroke-dasharray="donutLengths.selesai + ' ' + (238.76 - donutLengths.selesai)"
+                                        stroke-dashoffset="0"
+                                        class="transition-all duration-300 hover:stroke-[15px] cursor-pointer"
+                                        @mouseenter="donutActiveLabel = 'Selesai'; donutActiveCount = countSelesai"
+                                        @mouseleave="donutActiveLabel = 'Total'; donutActiveCount = orders.length" />
+
+                                <!-- 2. Proses (Amber #F59E0B) -->
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="#F59E0B" stroke-width="12"
+                                        :stroke-dasharray="donutLengths.proses + ' ' + (238.76 - donutLengths.proses)"
+                                        :stroke-dashoffset="'-' + donutLengths.selesai"
+                                        class="transition-all duration-300 hover:stroke-[15px] cursor-pointer"
+                                        @mouseenter="donutActiveLabel = 'Proses'; donutActiveCount = countProses"
+                                        @mouseleave="donutActiveLabel = 'Total'; donutActiveCount = orders.length" />
+
+                                <!-- 3. Batal (Rose #EF4444) -->
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="#EF4444" stroke-width="12"
+                                        :stroke-dasharray="donutLengths.batal + ' ' + (238.76 - donutLengths.batal)"
+                                        :stroke-dashoffset="'-' + (donutLengths.selesai + donutLengths.proses)"
+                                        class="transition-all duration-300 hover:stroke-[15px] cursor-pointer"
+                                        @mouseenter="donutActiveLabel = 'Batal'; donutActiveCount = countBatal"
+                                        @mouseleave="donutActiveLabel = 'Total'; donutActiveCount = orders.length" />
+                            </svg>
+
+                            <!-- Pusat Donut Counter -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                                <span class="text-2xl font-extrabold text-slate-900 tabular-nums" x-text="donutActiveCount"></span>
+                                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider" x-text="donutActiveLabel"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend 3 Warna -->
+                    <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                        <div class="p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition"
+                             @mouseenter="donutActiveLabel = 'Selesai'; donutActiveCount = countSelesai"
+                             @mouseleave="donutActiveLabel = 'Total'; donutActiveCount = orders.length">
+                            <div class="flex items-center justify-center gap-1 text-[10px] font-bold text-emerald-700">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Selesai
+                            </div>
+                            <div class="text-xs font-extrabold text-slate-800 mt-0.5" x-text="countSelesai"></div>
+                        </div>
+
+                        <div class="p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition"
+                             @mouseenter="donutActiveLabel = 'Proses'; donutActiveCount = countProses"
+                             @mouseleave="donutActiveLabel = 'Total'; donutActiveCount = orders.length">
+                            <div class="flex items-center justify-center gap-1 text-[10px] font-bold text-amber-700">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Proses
+                            </div>
+                            <div class="text-xs font-extrabold text-slate-800 mt-0.5" x-text="countProses"></div>
+                        </div>
+
+                        <div class="p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition"
+                             @mouseenter="donutActiveLabel = 'Batal'; donutActiveCount = countBatal"
+                             @mouseleave="donutActiveLabel = 'Total'; donutActiveCount = orders.length">
+                            <div class="flex items-center justify-center gap-1 text-[10px] font-bold text-rose-700">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Batal
+                            </div>
+                            <div class="text-xs font-extrabold text-slate-800 mt-0.5" x-text="countBatal"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Tabel Rekap Transaksi Lengkap -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                <!-- Toolbar Pencarian & Filter -->
+                <div class="p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div class="relative w-full sm:w-80">
+                        <input type="text" 
+                               x-model="searchQuery"
+                               placeholder="Cari nomor nota atau nama pelanggan..." 
+                               class="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 bg-white shadow-xs">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <div class="relative inline-block">
+                            <select x-model="statusFilter"
+                                    class="appearance-none text-xs py-1.5 pl-3.5 pr-9 rounded-lg border border-slate-300 bg-white font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600 shadow-xs cursor-pointer">
+                                <option value="all">Semua Status</option>
+                                <option value="proses">Dalam Proses</option>
+                                <option value="selesai">Selesai Diambil</option>
+                                <option value="batal">Dibatalkan</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Container (Horizontal Scrollable on Mobile) -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <th class="py-3 px-4">No. Transaksi</th>
+                                <th class="py-3 px-4">Nama Pelanggan</th>
+                                <th class="py-3 px-4">Layanan</th>
+                                <th class="py-3 px-4 text-center">Berat / Qty</th>
+                                <th class="py-3 px-4 text-right">Total Bayar</th>
+                                <th class="py-3 px-4 text-center">Status Cucian</th>
+                                <th class="py-3 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm">
+                            <template x-for="item in filteredOrders" :key="item.id">
+                                <tr class="hover:bg-slate-50/80 transition">
+                                    <td class="py-3.5 px-4 font-mono font-bold text-xs text-blue-600 whitespace-nowrap" x-text="item.code"></td>
+                                    <td class="py-3.5 px-4 whitespace-nowrap">
+                                        <div class="font-bold text-slate-900 text-xs sm:text-sm" x-text="item.customer_name"></div>
+                                        <div class="text-[11px] text-slate-400 font-mono mt-0.5" x-text="item.phone"></div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-xs font-medium text-slate-700 whitespace-nowrap" x-text="item.service_name"></td>
+                                    <td class="py-3.5 px-4 text-center text-xs font-bold text-slate-800 tabular-nums whitespace-nowrap" x-text="item.weight + ' ' + item.unit"></td>
+                                    <td class="py-3.5 px-4 text-right text-xs font-extrabold text-slate-900 tabular-nums whitespace-nowrap" x-text="formatRupiah(item.total)"></td>
+                                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                                        <div class="relative inline-block">
+                                            <select x-model="item.status"
+                                                    @change="updateOrderStatus(item)"
+                                                    :class="{
+                                                        'bg-amber-50 text-amber-700 border-amber-200': item.status === 'proses',
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-200': item.status === 'selesai',
+                                                        'bg-rose-50 text-rose-700 border-rose-200': item.status === 'batal'
+                                                    }"
+                                                    class="appearance-none text-xs font-bold py-1.5 pl-3.5 pr-9 rounded-full border shadow-2xs focus:outline-none cursor-pointer transition">
+                                                <option value="proses">Dalam Proses</option>
+                                                <option value="selesai">Selesai Diambil</option>
+                                                <option value="batal">Pesanan Batal</option>
+                                            </select>
+                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <!-- Tombol Cetak Struk -->
+                                            <button type="button" 
+                                                    @click="openReceiptModal(item)"
+                                                    title="Cetak Struk Pembayaran"
+                                                    class="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                </svg>
+                                            </button>
+
+                                            <!-- Tombol Hapus -->
+                                            <button type="button" 
+                                                    @click="deleteOrder(item.id)"
+                                                    title="Hapus Transaksi"
+                                                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Counter -->
+                <div class="px-4 py-3 bg-slate-50/70 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+                    <span>Menampilkan <b class="text-slate-800" x-text="filteredOrders.length"></b> dari <b class="text-slate-800" x-text="orders.length"></b> total order</span>
+                    <span class="text-[11px] text-slate-400">Data tersimpan di peramban (localStorage)</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= TAB 2: DATA PELANGGAN ================= -->
+        <div x-show="activeTab === 'pelanggan'" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">Data Pelanggan</h1>
+                    <p class="text-xs text-slate-500 mt-0.5">Daftar pelanggan terdaftar beserta riwayat transaksi di Laundry Rey.</p>
+                </div>
+                <div>
+                    <button type="button" @click="activeTab = 'rekap'" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs transition cursor-pointer">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <span>Kembali ke Rekap</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Metrik Pelanggan -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pelanggan Terdaftar</div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <div class="text-2xl font-extrabold text-slate-900 tabular-nums" x-text="customers.length"></div>
+                        <span class="text-xs font-medium text-slate-400">Orang</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Belanja Pelanggan</div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <div class="text-2xl font-extrabold text-blue-600 tabular-nums" x-text="formatRupiah(totalRevenue)"></div>
+                        <span class="text-xs font-medium text-slate-400">Akumulasi</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-rata Belanja / Pelanggan</div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <div class="text-2xl font-extrabold text-emerald-600 tabular-nums" x-text="formatRupiah(customers.length ? Math.round(totalRevenue / customers.length) : 0)"></div>
+                        <span class="text-xs font-medium text-slate-400">Per Pelanggan</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Data Pelanggan -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
+                    <input type="text" 
+                           x-model="customerSearchQuery"
+                           placeholder="Cari nama atau nomor WhatsApp..." 
+                           class="w-full sm:w-80 text-xs pl-3.5 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-600 bg-white shadow-xs">
+                    <span class="text-xs text-slate-500" x-text="'Total: ' + filteredCustomers.length + ' pelanggan'"></span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <th class="py-3 px-4">Nama Pelanggan</th>
+                                <th class="py-3 px-4">Nomor WhatsApp</th>
+                                <th class="py-3 px-4 text-center">Total Order</th>
+                                <th class="py-3 px-4 text-right">Total Belanja</th>
+                                <th class="py-3 px-4 text-center">Aksi Hubungi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm">
+                            <template x-for="c in filteredCustomers" :key="c.phone">
+                                <tr class="hover:bg-slate-50/70 transition">
+                                    <td class="py-3.5 px-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0"
+                                                 x-text="c.name.charAt(0)">
+                                            </div>
+                                            <div class="font-bold text-slate-900 text-xs sm:text-sm" x-text="c.name"></div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-xs text-slate-600 whitespace-nowrap" x-text="c.phone"></td>
+                                    <td class="py-3.5 px-4 text-center font-extrabold text-xs text-slate-800 whitespace-nowrap" x-text="c.orderCount + 'x'"></td>
+                                    <td class="py-3.5 px-4 text-right font-extrabold text-xs text-emerald-600 whitespace-nowrap" x-text="formatRupiah(c.totalSpent)"></td>
+                                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                                        <a :href="'https://wa.me/' + cleanPhone(c.phone) + '?text=Halo%20' + encodeURIComponent(c.name) + ',%20terima%20kasih%20telah%20menggunakan%20layanan%20Laundry%20Rey.'"
+                                           target="_blank"
+                                           class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200 transition">
+                                            <span>WhatsApp</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 3: KATALOG LAYANAN ================= -->
+        <div x-show="activeTab === 'layanan'" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">Katalog Data Layanan</h1>
+                    <p class="text-xs text-slate-500 mt-0.5">Daftar lengkap 8 paket layanan pencucian dan tarif per kilogram/satuan di Laundry Rey.</p>
+                </div>
+                <div>
+                    <button type="button" @click="activeTab = 'rekap'" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs transition cursor-pointer">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <span>Kembali ke Rekap</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grid Layanan Cucian (8 Layanan) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <template x-for="item in services" :key="item.id">
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col justify-between hover:shadow-md hover:border-blue-300 transition duration-200">
+                        <div>
+                            <!-- Visual Icon Badge -->
+                            <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center p-3 mb-4 mx-auto shadow-2xs">
+                                <img :src="item.image" :alt="item.name" class="w-full h-full object-contain">
+                            </div>
+
+                            <div class="text-center">
+                                <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 mb-1" x-text="item.category"></span>
+                                <h3 class="font-bold text-slate-900 text-sm" x-text="item.name"></h3>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed" x-text="item.desc"></p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-baseline justify-between">
+                            <span class="text-[11px] font-semibold text-slate-400">Tarif Layanan</span>
+                            <span class="text-sm font-extrabold text-blue-600" x-text="formatRupiah(item.price) + ' / ' + item.unit"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="mt-auto border-t border-slate-200 bg-white py-4 px-4 sm:px-8 text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800 tracking-tight">Laundry Rey</span>
+                <span class="text-slate-300">•</span>
+                <span>Sistem Operasional & Rekap Transaksi Laundry</span>
+            </div>
+            <div>
+                &copy; 2026 Laundry Rey. Seluruh hak cipta dilindungi.
+            </div>
+        </div>
+    </footer>
+
+    <!-- ================= MODAL TAMBAH TRANSAKSI ================= -->
+    <div x-show="isCreateModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" x-cloak>
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
+             @click.away="isCreateModalOpen = false">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                    <h3 class="font-bold text-slate-900 text-sm sm:text-base">Tambah Transaksi Baru</h3>
+                </div>
+                <button type="button" @click="isCreateModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
+
+            <form @submit.prevent="submitCreateOrder()" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pelanggan</label>
+                    <input type="text" x-model="newOrder.customer_name" required placeholder="Nama lengkap pelanggan" class="w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 focus:ring-1 focus:ring-blue-600 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor WhatsApp / HP</label>
+                    <input type="text" x-model="newOrder.phone" required placeholder="08xxxxxxxxxx" class="w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 focus:ring-1 focus:ring-blue-600 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Layanan</label>
+                        <select x-model="newOrder.service_id" @change="recalculateNewOrderPrice()" class="w-full text-xs rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-blue-600 focus:outline-none">
+                            <template x-for="s in services" :key="s.id">
+                                <option :value="s.id" x-text="s.name + ' (' + formatRupiah(s.price) + ')'"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Berat / Kuantitas (<span x-text="selectedServiceUnit"></span>)</label>
+                        <input type="number" step="0.5" min="0.5" x-model="newOrder.weight" @input="recalculateNewOrderPrice()" required class="w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 focus:ring-1 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Estimasi Total -->
+                <div class="p-3 bg-blue-50/70 border border-blue-200/60 rounded-xl flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-700">Estimasi Total Bayar</span>
+                    <span class="text-base font-extrabold text-blue-700" x-text="formatRupiah(newOrder.total)"></span>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2">
+                    <button type="button" @click="isCreateModalOpen = false" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition">Simpan Transaksi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL CETAK STRUK PEMBAYARAN ================= -->
+    <div x-show="isReceiptModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" x-cloak>
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100" @click.away="isReceiptModalOpen = false">
+            <div id="printableReceipt" class="space-y-4 text-center font-mono text-xs text-slate-800">
+                <!-- Receipt Header -->
+                <div class="border-b border-dashed border-slate-300 pb-3">
+                    <h2 class="font-extrabold text-base tracking-wider uppercase text-slate-900">Laundry Rey</h2>
+                    <p class="text-[10px] text-slate-500">Jl. Operasional Presisi No. 15, Jakarta</p>
+                    <p class="text-[10px] text-slate-500">WhatsApp: 0812-3456-7890</p>
+                </div>
+
+                <!-- Transaction Details -->
+                <div class="text-left space-y-1 text-[11px] border-b border-dashed border-slate-300 pb-3">
+                    <div class="flex justify-between"><span>No. Nota:</span><b class="text-slate-900" x-text="currentReceipt.code"></b></div>
+                    <div class="flex justify-between"><span>Tanggal:</span><span x-text="todayFormatted"></span></div>
+                    <div class="flex justify-between"><span>Pelanggan:</span><b x-text="currentReceipt.customer_name"></b></div>
+                    <div class="flex justify-between"><span>Status:</span><span class="uppercase font-bold" x-text="currentReceipt.status"></span></div>
+                </div>
+
+                <!-- Items -->
+                <div class="border-b border-dashed border-slate-300 pb-3 text-left">
+                    <div class="flex justify-between font-bold">
+                        <span x-text="currentReceipt.service_name"></span>
+                        <span x-text="formatRupiah(currentReceipt.total)"></span>
+                    </div>
+                    <div class="text-[10px] text-slate-500" x-text="currentReceipt.weight + ' ' + currentReceipt.unit"></div>
+                </div>
+
+                <!-- Total -->
+                <div class="flex justify-between text-sm font-extrabold text-slate-900 pt-1">
+                    <span>TOTAL BAYAR:</span>
+                    <span x-text="formatRupiah(currentReceipt.total)"></span>
+                </div>
+
+                <!-- Footer Receipt -->
+                <div class="text-[9px] text-slate-400 pt-3 border-t border-dashed border-slate-200">
+                    <p>Terima kasih atas kepercayaan Anda.</p>
+                    <p>Cucian bersih, rapi, dan wangi terpercaya.</p>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button type="button" @click="isReceiptModalOpen = false" class="w-1/2 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Tutup</button>
+                <button type="button" onclick="window.print()" class="w-1/2 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-sm transition">Cetak Struk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL LOGIN & SWITCH ACCOUNT ================= -->
+    <div x-show="isAuthModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" x-cloak>
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-8 relative" @click.away="isAuthModalOpen = false">
+            <button type="button" @click="isAuthModalOpen = false" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            
+            <div class="flex flex-col items-center text-center mb-6">
+                <div class="relative w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 p-2.5 shadow-lg shadow-blue-500/30 flex items-center justify-center mb-3">
+                    <svg class="w-full h-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="3" y="2" width="18" height="20" rx="3.5" stroke="currentColor" stroke-width="1.8" fill="rgba(255,255,255,0.15)" />
+                        <line x1="3" y1="7" x2="21" y2="7" stroke="currentColor" stroke-width="1.4" />
+                        <circle cx="6.5" cy="4.5" r="1" fill="currentColor" />
+                        <circle cx="9.5" cy="4.5" r="1" fill="currentColor" />
+                        <circle cx="12" cy="14.5" r="5" stroke="currentColor" stroke-width="1.6" />
+                        <g class="animate-spin-slow" style="transform-origin: 12px 14.5px;">
+                            <circle cx="12" cy="14.5" r="3" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 1.5" />
+                        </g>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">Laundry Rey</h2>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Pilih Peran Akun Pengguna</p>
+            </div>
+
+            <!-- Demo Quick Switch -->
+            <div class="space-y-2 mb-4">
+                <button type="button" 
+                        @click="switchAccount('Kasir Laundry', 'kasir@gmail.com', 'kasir')"
+                        class="w-full p-3 bg-slate-50 hover:bg-blue-50/80 border border-slate-200 hover:border-blue-300 rounded-xl transition text-left cursor-pointer flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">Masuk sebagai Kasir</div>
+                        <div class="text-[10px] text-slate-400 font-mono">kasir@gmail.com</div>
+                    </div>
+                    <span class="text-[10px] font-bold text-blue-600 bg-blue-100/60 px-2 py-0.5 rounded-full">Aktifkan</span>
+                </button>
+
+                <button type="button" 
+                        @click="switchAccount('Administrator', 'admin@gmail.com', 'admin')"
+                        class="w-full p-3 bg-slate-50 hover:bg-indigo-50/80 border border-slate-200 hover:border-indigo-300 rounded-xl transition text-left cursor-pointer flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">Masuk sebagai Administrator</div>
+                        <div class="text-[10px] text-slate-400 font-mono">admin@gmail.com</div>
+                    </div>
+                    <span class="text-[10px] font-bold text-indigo-600 bg-indigo-100/60 px-2 py-0.5 rounded-full">Aktifkan</span>
+                </button>
+            </div>
+
+            <p class="text-center text-[11px] text-slate-400 pt-2">
+                Sistem Operasional & Rekap Transaksi Laundry Rey
+            </p>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT STATE ENGINE ================= -->
+    <script>
+        function laundryApp() {
+            return {
+                activeTab: 'rekap',
+                searchQuery: '',
+                statusFilter: 'all',
+                customerSearchQuery: '',
+                isCreateModalOpen: false,
+                isReceiptModalOpen: false,
+                isAuthModalOpen: false,
+                
+                currentUser: {
+                    name: 'Kasir Laundry',
+                    email: 'kasir@gmail.com',
+                    role: 'kasir'
+                },
+
+                todayFormatted: '24 Nov 2026',
+
+                donutActiveLabel: 'Total',
+                donutActiveCount: 12,
+
+                // 8 Master Services
+                services: [
+                    { id: 1, name: 'Cuci Komplit (Reguler)', category: 'Reguler', price: 9000, unit: 'Kg', desc: 'Cuci bersih, pelembut premium, setrika uap rapi, packing plastik higienis.', image: './images/services/cuci-komplit.svg' },
+                    { id: 2, name: 'Cuci Lipat (Kering Rapi)', category: 'Reguler', price: 7000, unit: 'Kg', desc: 'Cuci higienis, pengeringan mesin panas, lipat rapi tanpa setrika.', image: './images/services/cuci-lipat.svg' },
+                    { id: 3, name: 'Cuci Kilat 1 Hari', category: 'Ekspres', price: 13000, unit: 'Kg', desc: 'Prioritas pengerjaan 24 jam selesai, wangi parfum tahan lama.', image: './images/services/cuci-kilat.svg' },
+                    { id: 4, name: 'Super Kilat (Express 3 Jam)', category: 'Superkilat', price: 18000, unit: 'Kg', desc: 'Selesai dalam 3-4 jam dengan mesin pengering modern khusus.', image: './images/services/super-kilat.svg' },
+                    { id: 5, name: 'Bed Cover & Selimut', category: 'Khusus', price: 35000, unit: 'Pcs', desc: 'Pembersihan serat tebal, sanitasi anti-tungau, aroma segar.', image: './images/services/bed-cover.svg' },
+                    { id: 6, name: 'Cuci Sepatu Premium', category: 'Khusus', price: 25000, unit: 'Psg', desc: 'Deep cleaning sol, upper canvas/leather, dan treatment anti-bakteri.', image: './images/services/sepatu.svg' },
+                    { id: 7, name: 'Jas / Blazer / Gaun', category: 'Khusus', price: 35000, unit: 'Pcs', desc: 'Dry clean halus mempertahankan bentuk kain jas dan gaun pesta.', image: './images/services/jas-blazer.svg' },
+                    { id: 8, name: 'Cuci Karpet & Matras', category: 'Khusus', price: 20000, unit: 'm²', desc: 'Pencucian karpet tebal dengan water extractor bertekanan tinggi.', image: './images/services/karpet.svg' }
+                ],
+
+                // 12 Initial Orders
+                orders: [],
+
+                newOrder: {
+                    customer_name: '',
+                    phone: '',
+                    service_id: 1,
+                    weight: 3,
+                    total: 27000
+                },
+
+                currentReceipt: {},
+
+                weeklyData: [
+                    { day: 'Sen', date: '18 Nov', count: 7 },
+                    { day: 'Sel', date: '19 Nov', count: 9 },
+                    { day: 'Rab', date: '20 Nov', count: 6 },
+                    { day: 'Kam', date: '21 Nov', count: 11 },
+                    { day: 'Jum', date: '22 Nov', count: 8 },
+                    { day: 'Sab', date: '23 Nov', count: 14 },
+                    { day: 'Min', date: '24 Nov', count: 12 }
+                ],
+
+                initApp() {
+                    const saved = localStorage.getItem('laundryrey_orders');
+                    if (saved) {
+                        try {
+                            this.orders = JSON.parse(saved);
+                        } catch(e) {
+                            this.seedDefaultOrders();
+                        }
+                    } else {
+                        this.seedDefaultOrders();
+                    }
+                    this.donutActiveCount = this.orders.length;
+                },
+
+                seedDefaultOrders() {
+                    this.orders = [
+                        { id: 1, code: 'ORD-20261124-001', customer_name: 'Budi Santoso', phone: '081234567801', service_name: 'Cuci Komplit (Reguler)', weight: 5, unit: 'Kg', total: 45000, status: 'selesai' },
+                        { id: 2, code: 'ORD-20261124-002', customer_name: 'Siti Nurhaliza', phone: '081234567802', service_name: 'Cuci Lipat (Kering Rapi)', weight: 3, unit: 'Kg', total: 21000, status: 'selesai' },
+                        { id: 3, code: 'ORD-20261124-003', customer_name: 'Ahmad Fauzi', phone: '081234567803', service_name: 'Cuci Kilat 1 Hari', weight: 4, unit: 'Kg', total: 52000, status: 'proses' },
+                        { id: 4, code: 'ORD-20261124-004', customer_name: 'Dewi Lestari', phone: '081234567804', service_name: 'Bed Cover & Selimut', weight: 2, unit: 'Pcs', total: 70000, status: 'selesai' },
+                        { id: 5, code: 'ORD-20261124-005', customer_name: 'Rian Pratama', phone: '081234567805', service_name: 'Cuci Sepatu Premium', weight: 2, unit: 'Psg', total: 50000, status: 'selesai' },
+                        { id: 6, code: 'ORD-20261124-006', customer_name: 'Maya Anggraini', phone: '081234567806', service_name: 'Jas / Blazer / Gaun', weight: 1, unit: 'Pcs', total: 35000, status: 'selesai' },
+                        { id: 7, code: 'ORD-20261124-007', customer_name: 'Hendra Kurniawan', phone: '081234567807', service_name: 'Cuci Karpet & Matras', weight: 6, unit: 'm²', total: 120000, status: 'selesai' },
+                        { id: 8, code: 'ORD-20261124-008', customer_name: 'Putri Wulandari', phone: '081234567808', service_name: 'Super Kilat (Express 3 Jam)', weight: 3, unit: 'Kg', total: 54000, status: 'batal' },
+                        { id: 9, code: 'ORD-20261124-009', customer_name: 'Eko Prasetyo', phone: '081234567809', service_name: 'Cuci Komplit (Reguler)', weight: 4, unit: 'Kg', total: 36000, status: 'proses' },
+                        { id: 10, code: 'ORD-20261124-010', customer_name: 'Rizky Ramadhan', phone: '081234567810', service_name: 'Cuci Lipat (Kering Rapi)', weight: 5, unit: 'Kg', total: 35000, status: 'selesai' },
+                        { id: 11, code: 'ORD-20261124-011', customer_name: 'Ratna Sari', phone: '081234567811', service_name: 'Cuci Kilat 1 Hari', weight: 2.5, unit: 'Kg', total: 32500, status: 'selesai' },
+                        { id: 12, code: 'ORD-20261124-012', customer_name: 'Bayu Nugroho', phone: '081234567812', service_name: 'Super Kilat (Express 3 Jam)', weight: 4, unit: 'Kg', total: 72000, status: 'proses' }
+                    ];
+                    this.saveOrders();
+                },
+
+                saveOrders() {
+                    localStorage.setItem('laundryrey_orders', JSON.stringify(this.orders));
+                },
+
+                get countProses() {
+                    return this.orders.filter(o => o.status === 'proses').length;
+                },
+                get countSelesai() {
+                    return this.orders.filter(o => o.status === 'selesai').length;
+                },
+                get countBatal() {
+                    return this.orders.filter(o => o.status === 'batal').length;
+                },
+                get totalRevenue() {
+                    return this.orders
+                        .filter(o => o.status !== 'batal')
+                        .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+                },
+
+                get donutLengths() {
+                    const total = Math.max(1, this.orders.length);
+                    const C = 238.76;
+                    const lenSelesai = Number(((this.countSelesai / total) * C).toFixed(2));
+                    const lenProses = Number(((this.countProses / total) * C).toFixed(2));
+                    const lenBatal = Math.max(0, Number((C - lenSelesai - lenProses).toFixed(2)));
+                    return { selesai: lenSelesai, proses: lenProses, batal: lenBatal };
+                },
+
+                get filteredOrders() {
+                    return this.orders.filter(item => {
+                        const matchStatus = this.statusFilter === 'all' || item.status === this.statusFilter;
+                        const q = this.searchQuery.toLowerCase();
+                        const matchSearch = !q || item.code.toLowerCase().includes(q) || item.customer_name.toLowerCase().includes(q);
+                        return matchStatus && matchSearch;
+                    });
+                },
+
+                get customers() {
+                    const map = {};
+                    this.orders.forEach(o => {
+                        const key = o.phone || o.customer_name;
+                        if (!map[key]) {
+                            map[key] = {
+                                name: o.customer_name,
+                                phone: o.phone,
+                                orderCount: 0,
+                                totalSpent: 0
+                            };
+                        }
+                        map[key].orderCount += 1;
+                        if (o.status !== 'batal') {
+                            map[key].totalSpent += o.total;
+                        }
+                    });
+                    return Object.values(map);
+                },
+
+                get filteredCustomers() {
+                    const q = this.customerSearchQuery.toLowerCase();
+                    return this.customers.filter(c => {
+                        return !q || c.name.toLowerCase().includes(q) || c.phone.includes(q);
+                    });
+                },
+
+                get selectedServiceUnit() {
+                    const s = this.services.find(x => x.id == this.newOrder.service_id);
+                    return s ? s.unit : 'Kg';
+                },
+
+                recalculateNewOrderPrice() {
+                    const s = this.services.find(x => x.id == this.newOrder.service_id);
+                    if (s) {
+                        this.newOrder.total = Math.round((Number(this.newOrder.weight) || 0) * s.price);
+                    }
+                },
+
+                openCreateModal() {
+                    this.newOrder = {
+                        customer_name: '',
+                        phone: '',
+                        service_id: 1,
+                        weight: 3,
+                        total: 27000
+                    };
+                    this.isCreateModalOpen = true;
+                },
+
+                submitCreateOrder() {
+                    const s = this.services.find(x => x.id == this.newOrder.service_id);
+                    const newId = this.orders.length ? Math.max(...this.orders.map(o => o.id)) + 1 : 1;
+                    const code = 'ORD-20261124-' + String(newId).padStart(3, '0');
+
+                    this.orders.unshift({
+                        id: newId,
+                        code: code,
+                        customer_name: this.newOrder.customer_name,
+                        phone: this.newOrder.phone,
+                        service_name: s ? s.name : 'Cuci Komplit',
+                        weight: Number(this.newOrder.weight),
+                        unit: s ? s.unit : 'Kg',
+                        total: this.newOrder.total,
+                        status: 'proses'
+                    });
+
+                    this.saveOrders();
+                    this.isCreateModalOpen = false;
+                    this.donutActiveCount = this.orders.length;
+                },
+
+                updateOrderStatus(item) {
+                    this.saveOrders();
+                },
+
+                deleteOrder(id) {
+                    if (confirm('Yakin ingin menghapus data transaksi ini?')) {
+                        this.orders = this.orders.filter(o => o.id !== id);
+                        this.saveOrders();
+                        this.donutActiveCount = this.orders.length;
+                    }
+                },
+
+                openReceiptModal(order) {
+                    this.currentReceipt = order;
+                    this.isReceiptModalOpen = true;
+                },
+
+                switchAccount(name, email, role) {
+                    this.currentUser = { name, email, role };
+                    this.isAuthModalOpen = false;
+                },
+
+                formatRupiah(val) {
+                    return 'Rp ' + Number(val || 0).toLocaleString('id-ID');
+                },
+
+                cleanPhone(phone) {
+                    let p = String(phone || '').replace(/[^0-9]/g, '');
+                    if (p.startsWith('0')) {
+                        p = '62' + p.slice(1);
+                    }
+                    return p;
+                }
+            };
+        }
+    </script>
+</body>
+</html>
